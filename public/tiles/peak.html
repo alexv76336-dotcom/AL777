@@ -105,7 +105,7 @@ html, body {
       <button id="keySave">Speichern</button>
     </div>
     <div class="hint" id="hint">
-      🔐 In <b>diesem Browser</b> gespeichert.<br>
+      🔐 Wird auf Vercel gespeichert & auf allen Geräten verfügbar.<br>
       Neuer Key? → <a href="https://console.anthropic.com/api/keys" target="_blank">console.anthropic.com</a>
     </div>
   </div>
@@ -131,39 +131,56 @@ html, body {
 
   keyToggle.addEventListener('click', () => keypanel.classList.toggle('open'));
 
-  // Session-Storage für API Key (funktioniert in iframes)
-  let apiKeySession = '';
+  // API Route für Key-Speicherung
+  const API_URL = '/api/nova/key';
 
-  function getKey() {
-    console.log('Getting API key from session storage');
-    return apiKeySession;
+  async function getKey() {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      return data.key || '';
+    } catch(e) {
+      console.error('Failed to load key:', e);
+      return '';
+    }
   }
 
-  function saveKey(k) {
-    apiKeySession = k;
-    console.log('API key saved to session memory');
-    return true;
+  async function saveKey(k) {
+    try {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: k })
+      });
+      const data = await res.json();
+      return res.ok;
+    } catch(e) {
+      console.error('Failed to save key:', e);
+      hint.classList.add('error');
+      hint.innerHTML = '❌ Speichern fehlgeschlagen';
+      return false;
+    }
   }
 
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function setOrb(s){ orb.className = 'orb' + (s ? ' ' + s : ''); }
 
-  function init() {
-    const savedKey = getKey();
+  async function init() {
+    const savedKey = await getKey();
     if (savedKey) {
       hint.classList.remove('error');
       hint.classList.add('saved');
-      hint.innerHTML = '✓ API-Schlüssel geladen.';
+      hint.innerHTML = '✓ API-Schlüssel auf Vercel gespeichert.';
       keyInput.placeholder = '••••••••••••••••';
       keyToggle.classList.add('has-key');
       sendBtn.disabled = false;
       addCoach('Willkommen! Frag mich etwas 💪');
     } else {
-      addCoach('- Hallo, ich bin Nova 🧠<br>- Klick 🔑 und füg deinen API-Key ein<br>- Dann können wir loslegen!');
+      addCoach('- Hallo, ich bin Nova 🧠<br>- Klick 🔑 und füg deinen API-Key ein<br>- Er wird auf Vercel gespeichert!');
     }
   }
 
-  document.getElementById('keySave').addEventListener('click', () => {
+  document.getElementById('keySave').addEventListener('click', async () => {
     const k = keyInput.value.trim();
 
     if (!k) {
@@ -178,12 +195,12 @@ html, body {
       return;
     }
 
-    if (saveKey(k)) {
+    if (await saveKey(k)) {
       keyInput.value = '';
       keyInput.placeholder = '••••••••••••••••';
       hint.classList.remove('error');
       hint.classList.add('saved');
-      hint.innerHTML = '✓ Schlüssel gespeichert!';
+      hint.innerHTML = '✓ Auf Vercel gespeichert! Alle Geräte haben Zugriff.';
       keyToggle.classList.add('has-key');
       keypanel.classList.remove('open');
       sendBtn.disabled = false;
@@ -228,7 +245,7 @@ html, body {
     text = (text||'').trim();
     if (!text || busy) return;
 
-    const apiKey = getKey();
+    const apiKey = await getKey();
     if (!apiKey){
       addCoach('- API-Schlüssel erforderlich<br>- Klick 🔑 oben rechts');
       return;
