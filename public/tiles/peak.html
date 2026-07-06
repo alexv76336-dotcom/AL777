@@ -105,7 +105,7 @@ html, body {
       <button id="keySave">Speichern</button>
     </div>
     <div class="hint" id="hint">
-      🔐 Nur in <b>diesem Browser</b> gespeichert.<br>
+      🔐 In <b>diesem Browser</b> gespeichert.<br>
       Neuer Key? → <a href="https://console.anthropic.com/api/keys" target="_blank">console.anthropic.com</a>
     </div>
   </div>
@@ -131,31 +131,18 @@ html, body {
 
   keyToggle.addEventListener('click', () => keypanel.classList.toggle('open'));
 
-  // Direktes localStorage (robuster als Vitality Bridge)
-  const KEY_NAME = 'nova_api_key';
+  // Session-Storage für API Key (funktioniert in iframes)
+  let apiKeySession = '';
 
   function getKey() {
-    try {
-      const key = localStorage.getItem(KEY_NAME);
-      console.log('Retrieved key from localStorage:', key ? 'exists' : 'not found');
-      return key || '';
-    } catch(e) {
-      console.error('localStorage read failed:', e);
-      return '';
-    }
+    console.log('Getting API key from session storage');
+    return apiKeySession;
   }
 
   function saveKey(k) {
-    try {
-      localStorage.setItem(KEY_NAME, k);
-      console.log('Key saved to localStorage successfully');
-      return true;
-    } catch(e) {
-      console.error('localStorage write failed:', e);
-      hint.classList.add('error');
-      hint.innerHTML = '❌ Speichern fehlgeschlagen (Browser-Speicher voll?)';
-      return false;
-    }
+    apiKeySession = k;
+    console.log('API key saved to session memory');
+    return true;
   }
 
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -170,7 +157,9 @@ html, body {
       keyInput.placeholder = '••••••••••••••••';
       keyToggle.classList.add('has-key');
       sendBtn.disabled = false;
-      addCoach('Hallo! Frag mich alles 💪');
+      addCoach('Willkommen! Frag mich etwas 💪');
+    } else {
+      addCoach('- Hallo, ich bin Nova 🧠<br>- Klick 🔑 und füg deinen API-Key ein<br>- Dann können wir loslegen!');
     }
   }
 
@@ -179,7 +168,7 @@ html, body {
 
     if (!k) {
       hint.classList.add('error');
-      hint.innerHTML = '❌ Schlüssel erforderlich';
+      hint.innerHTML = '❌ API-Schlüssel erforderlich';
       return;
     }
 
@@ -199,7 +188,7 @@ html, body {
       keypanel.classList.remove('open');
       sendBtn.disabled = false;
       feed.innerHTML = '';
-      addCoach('Bereit! Was möchtest du wissen? 🎯');
+      addCoach('Super! Frag mich jetzt alles 🎯');
     }
   });
 
@@ -241,7 +230,7 @@ html, body {
 
     const apiKey = getKey();
     if (!apiKey){
-      addCoach('- Schlüssel erforderlich<br>- Klick 🔑 oben rechts');
+      addCoach('- API-Schlüssel erforderlich<br>- Klick 🔑 oben rechts');
       return;
     }
 
