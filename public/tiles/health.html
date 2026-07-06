@@ -332,7 +332,9 @@ async function init() {
   const data = await Vitality.load();
   state = data || { supplements: [], appleHealth: {} };
   render();
-  loadAppleHealthData();
+  await loadAppleHealthData();
+  // Refresh every 2 minutes
+  setInterval(loadAppleHealthData, 120000);
 }
 
 function render() {
@@ -387,25 +389,51 @@ async function removeSupplement(idx) {
   render();
 }
 
-function loadAppleHealthData() {
-  // Demo Daten (in Produktion würde HealthKit API genutzt)
-  const demoData = {
-    heartRate: 68,
-    steps: 8432,
-    calories: 2145,
-    activity: 45,
-    sleepHours: 7.5,
-    deepSleep: 120
-  };
+async function loadAppleHealthData() {
+  try {
+    // Try to fetch real data from API
+    const res = await fetch('/api/health/data');
+    const data = await res.json();
 
-  document.getElementById('heartRate').textContent = demoData.heartRate;
-  document.getElementById('steps').textContent = demoData.steps.toLocaleString('de-DE');
-  document.getElementById('calories').textContent = demoData.calories.toLocaleString('de-DE');
-  document.getElementById('activity').textContent = demoData.activity;
-  document.getElementById('sleepHours').textContent = demoData.sleepHours;
-  document.getElementById('deepSleep').textContent = demoData.deepSleep;
+    // Use real data if available, fallback to demo
+    const healthData = {
+      heartRate: data.heartRate || 68,
+      steps: data.steps || 8432,
+      calories: data.calories || 2145,
+      activity: data.activity || 45,
+      sleepHours: data.sleepHours || 7.5,
+      deepSleep: data.deepSleep || 120
+    };
 
-  updateStatus();
+    document.getElementById('heartRate').textContent = healthData.heartRate;
+    document.getElementById('steps').textContent = healthData.steps.toLocaleString('de-DE');
+    document.getElementById('calories').textContent = healthData.calories.toLocaleString('de-DE');
+    document.getElementById('activity').textContent = healthData.activity;
+    document.getElementById('sleepHours').textContent = healthData.sleepHours;
+    document.getElementById('deepSleep').textContent = healthData.deepSleep;
+
+    updateStatus();
+  } catch (e) {
+    console.log('Health data fetch failed, using demo data:', e);
+    // Fallback to demo data
+    const demoData = {
+      heartRate: 68,
+      steps: 8432,
+      calories: 2145,
+      activity: 45,
+      sleepHours: 7.5,
+      deepSleep: 120
+    };
+
+    document.getElementById('heartRate').textContent = demoData.heartRate;
+    document.getElementById('steps').textContent = demoData.steps.toLocaleString('de-DE');
+    document.getElementById('calories').textContent = demoData.calories.toLocaleString('de-DE');
+    document.getElementById('activity').textContent = demoData.activity;
+    document.getElementById('sleepHours').textContent = demoData.sleepHours;
+    document.getElementById('deepSleep').textContent = demoData.deepSleep;
+
+    updateStatus();
+  }
 }
 
 function updateStatus() {
