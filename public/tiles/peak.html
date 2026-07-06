@@ -105,7 +105,7 @@ html, body {
       <button id="keySave">Speichern</button>
     </div>
     <div class="hint" id="hint">
-      🔐 Wird synchronisiert über alle Geräte.<br>
+      🔐 Wird in dieser Session gespeichert.<br>
       Neuer Key? → <a href="https://console.anthropic.com/api/keys" target="_blank">console.anthropic.com</a>
     </div>
   </div>
@@ -131,63 +131,24 @@ html, body {
 
   keyToggle.addEventListener('click', () => keypanel.classList.toggle('open'));
 
-  const API_URL = '/api/nova/key';
-  const STORAGE_KEY = 'nova_api_key_fallback';
+  const STORAGE_KEY = 'nova_anthropic_key';
+  let apiKey = '';
 
-  // Fallback: lokaler Storage wenn API nicht funktioniert
-  function getFallback() {
+  function loadKey() {
     try {
-      return sessionStorage.getItem(STORAGE_KEY) || '';
+      apiKey = sessionStorage.getItem(STORAGE_KEY) || '';
+      return apiKey;
     } catch(e) {
       return '';
     }
   }
 
-  function saveFallback(k) {
+  function saveKey(k) {
     try {
       sessionStorage.setItem(STORAGE_KEY, k);
-    } catch(e) {}
-  }
-
-  async function getKey() {
-    try {
-      console.log('[Nova] Loading key from API...');
-      const res = await fetch(API_URL, { timeout: 5000 });
-      if (!res.ok) throw new Error('API response not OK');
-      const data = await res.json();
-      const key = data.key || '';
-      console.log('[Nova] Key from API:', key ? 'loaded' : 'empty');
-      if (key) saveFallback(key);
-      return key;
-    } catch(e) {
-      console.log('[Nova] API failed, using fallback:', e.message);
-      return getFallback();
-    }
-  }
-
-  async function saveKey(k) {
-    saveFallback(k);
-    try {
-      console.log('[Nova] Saving key to API...');
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: k }),
-        timeout: 5000
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        console.error('[Nova] API error:', data.error);
-        hint.classList.add('error');
-        hint.innerHTML = '⚠️ Server antwortet nicht, aber Key ist gespeichert';
-        return false;
-      }
-      console.log('[Nova] Key saved to API');
+      apiKey = k;
       return true;
     } catch(e) {
-      console.error('[Nova] API save failed:', e.message);
-      hint.classList.add('error');
-      hint.innerHTML = '⚠️ Server antwortet nicht, aber Key ist lokal gespeichert';
       return false;
     }
   }
@@ -195,9 +156,9 @@ html, body {
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function setOrb(s){ orb.className = 'orb' + (s ? ' ' + s : ''); }
 
-  async function init() {
-    const savedKey = await getKey();
-    if (savedKey) {
+  function init() {
+    loadKey();
+    if (apiKey) {
       hint.classList.remove('error');
       hint.classList.add('saved');
       hint.innerHTML = '✓ API-Schlüssel geladen.';
@@ -210,7 +171,11 @@ html, body {
     }
   }
 
-  document.getElementById('keySave').addEventListener('click', async () => {
+  keyInput.addEventListener('keypress', e => {
+    if (e.key === 'Enter') document.getElementById('keySave').click();
+  });
+
+  document.getElementById('keySave').addEventListener('click', () => {
     const k = keyInput.value.trim();
 
     if (!k) {
@@ -225,18 +190,20 @@ html, body {
       return;
     }
 
-    const success = await saveKey(k);
-    if (success) {
+    if (saveKey(k)) {
       keyInput.value = '';
       keyInput.placeholder = '••••••••••••••••';
       hint.classList.remove('error');
       hint.classList.add('saved');
-      hint.innerHTML = '✓ Gespeichert! Zugriff auf allen Geräten.';
+      hint.innerHTML = '✓ Gespeichert! Jetzt bereit.';
       keyToggle.classList.add('has-key');
       keypanel.classList.remove('open');
       sendBtn.disabled = false;
       feed.innerHTML = '';
       addCoach('Super! Frag mich jetzt alles 🎯');
+    } else {
+      hint.classList.add('error');
+      hint.innerHTML = '❌ Speichern fehlgeschlagen';
     }
   });
 
@@ -276,7 +243,6 @@ html, body {
     text = (text||'').trim();
     if (!text || busy) return;
 
-    const apiKey = await getKey();
     if (!apiKey){
       addCoach('- API-Schlüssel erforderlich<br>- Klick 🔑 oben rechts');
       return;
