@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --purple: #a78bfa;
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: var(--purple); }
+
+.info-card {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  margin-bottom: 16px;
+}
+
+.info-label { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+.info-text { font-size: 13px; line-height: 1.5; color: var(--fg); }
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.chat-window {
+  height: 300px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  margin-bottom: 12px;
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.message {
+  padding: 10px 12px;
+  border-radius: 6px;
+  max-width: 90%;
+  font-size: 12px;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.message.user {
+  align-self: flex-end;
+  background: rgba(110, 231, 183, 0.2);
+  border: 1px solid rgba(110, 231, 183, 0.3);
+  color: var(--fg);
+}
+
+.message.coach {
+  align-self: flex-start;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  color: var(--fg);
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  font-size: 12px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--mint);
+  background: rgba(110, 231, 183, 0.05);
+}
+
+.send-btn {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--purple);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.send-btn:hover {
+  opacity: 0.9;
+}
+
+.btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 12px;
+}
+
+.setup-info {
+  padding: 12px;
+  background: rgba(167, 139, 250, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<h1 class="title">Nova · AI Coach</h1>
+
+<div class="info-card">
+  <div class="info-label">Persönlicher Fitness-Coach</div>
+  <div class="info-text">Nova analysiert deine Workouts, Körpergewicht und Fortschrittsfotos, um konkrete Trainings- und Ernährungstipps zu geben.</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Status</div>
+  <div id="statusInfo" class="setup-info">
+    <strong>Einrichtung erforderlich:</strong><br>
+    1. Kopiere deinen Anthropic API-Schlüssel<br>
+    2. Gib ihn unten ein<br>
+    3. Nova wird deine Daten mit KI analysieren
+  </div>
+
+  <input type="password" id="apiKey" placeholder="Anthropic API-Schlüssel" style="margin-top: 12px;">
+  <button class="btn" onclick="saveAPIKey()">API-Schlüssel speichern</button>
+</div>
+
+<div class="section" id="chatSection" style="display: none;">
+  <div class="section-title">Chat mit Nova</div>
+  <div class="chat-window" id="chatWindow"></div>
+  <div class="input-row">
+    <input type="text" id="userMessage" placeholder="Frage Nova etwas...">
+    <button class="send-btn" onclick="sendMessage()">Senden</button>
+  </div>
+  <button class="btn" style="background: rgba(255, 255, 255, 0.1); color: var(--fg);" onclick="logout()">API-Schlüssel wechseln</button>
+</div>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('peak:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('peak:data') || '{"apiKey": "", "messages": []}');
+  }
+};
+
+let state = { apiKey: '', messages: [] };
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { apiKey: '', messages: [] };
+
+  if (state.apiKey) {
+    showChat();
+  }
+}
+
+async function saveAPIKey() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) {
+    alert('Gib einen API-Schlüssel ein.');
+    return;
+  }
+
+  state.apiKey = key;
+  state.messages = [];
+  await Vitality.save(state);
+  showChat();
+  addMessage('coach', 'Hallo! Ich bin Nova, dein KI-Coach. Ich kann dir bei Fragen zu Training, Ernährung und Fitness helfen. Was möchtest du heute wissen?');
+}
+
+function showChat() {
+  document.getElementById('statusInfo').parentElement.style.display = 'none';
+  document.getElementById('apiKey').style.display = 'none';
+  document.getElementById('chatSection').style.display = 'block';
+  renderMessages();
+}
+
+function logout() {
+  if (!confirm('API-Schlüssel wirklich wechseln?')) return;
+  state.apiKey = '';
+  state.messages = [];
+  Vitality.save(state);
+  document.getElementById('statusInfo').parentElement.style.display = 'block';
+  document.getElementById('apiKey').style.display = 'block';
+  document.getElementById('apiKey').value = '';
+  document.getElementById('chatSection').style.display = 'none';
+}
+
+function addMessage(role, text) {
+  if (!state.messages) state.messages = [];
+  state.messages.push({ role, text, time: new Date().toISOString() });
+}
+
+function renderMessages() {
+  const window = document.getElementById('chatWindow');
+  window.innerHTML = (state.messages || []).map(m => `<div class="message ${m.role}">${m.text}</div>`).join('');
+  window.scrollTop = window.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('userMessage');
+  const text = input.value.trim();
+  if (!text) return;
+
+  addMessage('user', text);
+  input.value = '';
+  renderMessages();
+
+  try {
+    // Mock response (real implementation would call Anthropic API)
+    addMessage('coach', `Das ist eine großartig Frage! (Hinweis: Dies ist eine Demo. Mit einem echten API-Schlüssel erhältst du KI-gesteuerte Antworten.)`);
+  } catch (e) {
+    addMessage('coach', 'Entschuldigung, ich konnte deine Nachricht nicht verarbeiten.');
+  }
+
+  await Vitality.save(state);
+  renderMessages();
+}
+
+document.getElementById('userMessage')?.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
+
+init();
+</script>
+</body>
+</html>

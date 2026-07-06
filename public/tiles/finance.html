@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finanzen · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --amber: #F59E0B;
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+
+.summary-card {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.summary-label { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; }
+.summary-value { font-size: 18px; font-weight: 700; font-family: monospace; }
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.expense-list { display: grid; gap: 8px; }
+
+.expense-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.expense-name { font-weight: 500; }
+.expense-amount { font-family: monospace; font-weight: 600; color: var(--amber); }
+
+.btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+input, select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--mint);
+  background: rgba(110, 231, 183, 0.05);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-row > * { margin-bottom: 0; }
+
+.chart { margin: 12px 0; padding: 12px; background: rgba(110, 231, 183, 0.08); border-radius: 6px; font-size: 12px; }
+.chart-bar { display: flex; height: 20px; margin: 6px 0; border-radius: 3px; background: rgba(110, 231, 183, 0.3); }
+</style>
+</head>
+<body>
+<h1 class="title">Finanzen</h1>
+
+<div class="summary-grid">
+  <div class="summary-card">
+    <div class="summary-label">Gesamtvermögen</div>
+    <div class="summary-value" id="totalAssets">€0</div>
+  </div>
+  <div class="summary-card">
+    <div class="summary-label">Monatsbudget</div>
+    <div class="summary-value" id="monthlyBudget">€0</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Vermögenskonten</div>
+  <div class="expense-list" id="accountsList">
+    <div style="color: var(--muted); text-align: center; padding: 20px;">Keine Konten</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Abos & Ausgaben</div>
+  <div class="expense-list" id="subscriptionsList">
+    <div style="color: var(--muted); text-align: center; padding: 20px;">Keine Ausgaben</div>
+  </div>
+
+  <button class="btn" onclick="toggleAddForm()">+ Abonnement hinzufügen</button>
+</div>
+
+<div id="addForm" style="display: none; margin-top: 12px; padding: 12px; background: rgba(110, 231, 183, 0.05); border-radius: 6px;">
+  <input type="text" id="expName" placeholder="Name (z.B. Netflix)">
+  <input type="number" id="expAmount" placeholder="Betrag (€)" step="0.01">
+  <select id="expFreq">
+    <option>Monatlich</option>
+    <option>Jährlich</option>
+    <option>Wöchentlich</option>
+  </select>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+    <button style="background: var(--mint); color: var(--bg); border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="saveExpense()">Speichern</button>
+    <button style="background: rgba(255, 255, 255, 0.1); color: var(--fg); border: none; padding: 8px; border-radius: 6px; cursor: pointer;" onclick="toggleAddForm()">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('finance:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('finance:data') || '{"accounts": [], "subscriptions": []}');
+  }
+};
+
+let state = { accounts: [], subscriptions: [] };
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { accounts: [], subscriptions: [] };
+  render();
+}
+
+function render() {
+  const total = (state.accounts || []).reduce((sum, a) => sum + (a.amount || 0), 0);
+  const monthly = (state.subscriptions || []).reduce((sum, s) => {
+    const freq = s.frequency || 'Monatlich';
+    return sum + (freq === 'Monatlich' ? s.amount : freq === 'Jährlich' ? s.amount / 12 : s.amount * 4.33);
+  }, 0);
+
+  document.getElementById('totalAssets').textContent = '€' + total.toFixed(2);
+  document.getElementById('monthlyBudget').textContent = '€' + monthly.toFixed(2);
+
+  const accountsList = document.getElementById('accountsList');
+  accountsList.innerHTML = (state.accounts || []).length ?
+    state.accounts.map((a, i) => `<div class="expense-item"><span>${a.name}</span><span class="expense-amount">€${(a.amount || 0).toFixed(2)}</span></div>`).join('') :
+    '<div style="color: var(--muted); text-align: center; padding: 20px;">Keine Konten</div>';
+
+  const subsList = document.getElementById('subscriptionsList');
+  subsList.innerHTML = (state.subscriptions || []).length ?
+    state.subscriptions.map((s, i) => `<div class="expense-item"><span>${s.name} (${s.frequency})</span><span class="expense-amount">€${(s.amount || 0).toFixed(2)}</span></div>`).join('') :
+    '<div style="color: var(--muted); text-align: center; padding: 20px;">Keine Abos</div>';
+}
+
+function toggleAddForm() {
+  document.getElementById('addForm').style.display = document.getElementById('addForm').style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveExpense() {
+  const name = document.getElementById('expName').value.trim();
+  const amount = parseFloat(document.getElementById('expAmount').value) || 0;
+  const freq = document.getElementById('expFreq').value;
+
+  if (!name || amount <= 0) {
+    alert('Name und Betrag erforderlich.');
+    return;
+  }
+
+  if (!state.subscriptions) state.subscriptions = [];
+  state.subscriptions.push({ name, amount, frequency: freq });
+
+  await Vitality.save(state);
+  document.getElementById('expName').value = '';
+  document.getElementById('expAmount').value = '';
+  toggleAddForm();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

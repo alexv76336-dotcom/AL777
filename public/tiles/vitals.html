@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wasser · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --blue: #3b82f6;
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.progress-card {
+  padding: 20px;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.progress-label { font-size: 11px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+.progress-value { font-size: 32px; font-weight: 700; color: var(--blue); font-family: monospace; }
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(59, 130, 246, 0.2);
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue), var(--mint));
+  border-radius: 4px;
+  transition: width 300ms ease;
+}
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.entry-list { display: grid; gap: 8px; }
+
+.entry-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.entry-text { font-weight: 500; }
+.entry-meta { font-size: 11px; color: var(--muted); }
+
+.btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.quick-add {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.quick-btn {
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--blue);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.quick-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+input {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--mint);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+</style>
+</head>
+<body>
+<h1 class="title">Wasser-Intake</h1>
+
+<div class="progress-card">
+  <div class="progress-label">Heute</div>
+  <div class="progress-value" id="progressValue">0 ml</div>
+  <div class="progress-bar">
+    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+  </div>
+  <div class="progress-label" style="margin-top: 8px;">Ziel: 2000 ml</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Schnell hinzufügen</div>
+  <div class="quick-add">
+    <button class="quick-btn" onclick="addWater(250)">250 ml<br>Glas</button>
+    <button class="quick-btn" onclick="addWater(500)">500 ml<br>Flasche</button>
+    <button class="quick-btn" onclick="addWater(750)">750 ml</button>
+    <button class="quick-btn" onclick="addWater(1000)">1000 ml</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Heute</div>
+  <div class="entry-list" id="entryList">
+    <div style="color: var(--muted); text-align: center; padding: 20px;">Noch nichts konsumiert</div>
+  </div>
+
+  <button class="btn" onclick="toggleAddForm()">+ Benutzerdefiniert</button>
+</div>
+
+<div id="addForm" style="display: none; margin-top: 12px; padding: 12px; background: rgba(59, 130, 246, 0.05); border-radius: 6px;">
+  <input type="number" id="customAmount" placeholder="Menge (ml)" min="0" step="50">
+  <div class="form-row">
+    <button style="background: var(--mint); color: var(--bg); border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="saveCustomWater()">Speichern</button>
+    <button style="background: rgba(255, 255, 255, 0.1); color: var(--fg); border: none; padding: 8px; border-radius: 6px; cursor: pointer;" onclick="toggleAddForm()">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('vitals:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('vitals:data') || '{"entries": [], "lastReset": ""}');
+  }
+};
+
+let state = { entries: [], lastReset: new Date().toDateString() };
+const DAILY_GOAL = 2000;
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { entries: [], lastReset: new Date().toDateString() };
+
+  // Reset if new day
+  if (state.lastReset !== new Date().toDateString()) {
+    state.entries = [];
+    state.lastReset = new Date().toDateString();
+    await Vitality.save(state);
+  }
+
+  render();
+}
+
+function render() {
+  const total = (state.entries || []).reduce((sum, e) => sum + (e.amount || 0), 0);
+  const percent = Math.min(100, (total / DAILY_GOAL) * 100);
+
+  document.getElementById('progressValue').textContent = total + ' ml';
+  document.getElementById('progressFill').style.width = percent + '%';
+
+  const list = document.getElementById('entryList');
+  list.innerHTML = (state.entries || []).length ?
+    state.entries.map((e, i) => `<div class="entry-item"><div><div class="entry-text">${e.amount} ml</div><div class="entry-meta">${new Date(e.time).toLocaleTimeString('de-DE', {hour: '2-digit', minute: '2-digit'})}</div></div><button onclick="removeEntry(${i})" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Löschen</button></div>`).join('') :
+    '<div style="color: var(--muted); text-align: center; padding: 20px;">Noch nichts konsumiert</div>';
+}
+
+async function addWater(amount) {
+  if (!state.entries) state.entries = [];
+  state.entries.push({ amount, time: new Date().toISOString() });
+  await Vitality.save(state);
+  render();
+}
+
+async function saveCustomWater() {
+  const amount = parseInt(document.getElementById('customAmount').value) || 0;
+  if (amount <= 0) {
+    alert('Gib eine Menge ein.');
+    return;
+  }
+  await addWater(amount);
+  document.getElementById('customAmount').value = '';
+  toggleAddForm();
+}
+
+function toggleAddForm() {
+  document.getElementById('addForm').style.display = document.getElementById('addForm').style.display === 'none' ? 'block' : 'none';
+}
+
+async function removeEntry(idx) {
+  state.entries.splice(idx, 1);
+  await Vitality.save(state);
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

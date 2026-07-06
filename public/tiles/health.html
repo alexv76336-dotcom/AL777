@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gesundheit · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+  --green: #10b981;
+  --yellow: #f59e0b;
+  --red: #ef4444;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.card {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.card-title { font-weight: 600; margin-bottom: 6px; }
+.card-meta { font-size: 11px; color: var(--muted); }
+
+.verdict-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.verdict-green { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+.verdict-yellow { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+.verdict-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+.supplement-list { display: grid; gap: 8px; }
+.supplement-item {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(110, 231, 183, 0.08);
+  border: 1px solid rgba(110, 231, 183, 0.2);
+  font-size: 12px;
+}
+
+.supplement-name { font-weight: 600; color: var(--mint); }
+.supplement-dose { color: var(--muted); margin-top: 4px; }
+
+.btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+input {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--mint);
+  background: rgba(110, 231, 183, 0.05);
+}
+</style>
+</head>
+<body>
+<h1 class="title">Gesundheit</h1>
+
+<div class="section">
+  <div class="section-title">WHOOP Integration</div>
+  <div class="card">
+    <div class="card-title">Erholung</div>
+    <div class="card-meta" id="whoopStatus">Nicht verbunden. <a href="#" style="color: var(--mint); text-decoration: none;">WHOOP verbinden</a></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Supplement-Routine</div>
+  <div class="supplement-list" id="supplementList">
+    <div style="color: var(--muted); text-align: center; padding: 20px;">Keine Supplements eingetragen</div>
+  </div>
+
+  <button class="btn" onclick="toggleAddForm()">+ Supplement hinzufügen</button>
+</div>
+
+<div id="addForm" style="display: none; margin-top: 12px; padding: 12px; background: rgba(110, 231, 183, 0.05); border-radius: 6px;">
+  <input type="text" id="supName" placeholder="Supplement-Name (z.B. Vitamin D3)">
+  <input type="text" id="supDose" placeholder="Dosierung (z.B. 2000 IE)">
+  <input type="text" id="supTime" placeholder="Einnahmezeitpunkt (z.B. Morgens)">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+    <button style="background: var(--mint); color: var(--bg); border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="saveSupplement()">Speichern</button>
+    <button style="background: rgba(255, 255, 255, 0.1); color: var(--fg); border: none; padding: 8px; border-radius: 6px; cursor: pointer;" onclick="toggleAddForm()">Abbrechen</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Schlaf-Phasen Tracking</div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+    <div class="card" style="background: rgba(139, 92, 246, 0.1); border-color: rgba(139, 92, 246, 0.3);">
+      <div class="card-meta">REM</div>
+      <div style="font-size: 18px; font-weight: 700; margin-top: 6px;" id="remSleep">—</div>
+    </div>
+    <div class="card" style="background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3);">
+      <div class="card-meta">Tiefschlaf</div>
+      <div style="font-size: 18px; font-weight: 700; margin-top: 6px;" id="deepSleep">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('health:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('health:data') || '{"supplements": [], "sleep": {}}');
+  }
+};
+
+let state = { supplements: [], sleep: {} };
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { supplements: [], sleep: {} };
+  render();
+}
+
+function render() {
+  const list = document.getElementById('supplementList');
+  list.innerHTML = (state.supplements || []).length ?
+    state.supplements.map(s => `<div class="supplement-item"><div class="supplement-name">${s.name}</div><div class="supplement-dose">${s.dose} · ${s.time}</div></div>`).join('') :
+    '<div style="color: var(--muted); text-align: center; padding: 20px;">Keine Supplements eingetragen</div>';
+
+  document.getElementById('remSleep').textContent = (state.sleep?.rem || '—') + ' Min';
+  document.getElementById('deepSleep').textContent = (state.sleep?.deep || '—') + ' Min';
+}
+
+function toggleAddForm() {
+  document.getElementById('addForm').style.display = document.getElementById('addForm').style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveSupplement() {
+  const name = document.getElementById('supName').value.trim();
+  const dose = document.getElementById('supDose').value.trim();
+  const time = document.getElementById('supTime').value.trim();
+
+  if (!name || !dose) {
+    alert('Name und Dosierung erforderlich.');
+    return;
+  }
+
+  if (!state.supplements) state.supplements = [];
+  state.supplements.push({ name, dose, time });
+
+  await Vitality.save(state);
+  document.getElementById('supName').value = '';
+  document.getElementById('supDose').value = '';
+  document.getElementById('supTime').value = '';
+  toggleAddForm();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

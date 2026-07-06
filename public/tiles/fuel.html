@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Energie · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --amber: #F59E0B;
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.stat-card {
+  padding: 14px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  margin-bottom: 10px;
+}
+
+.stat-label { font-size: 11px; color: var(--muted); }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--amber); font-family: monospace; margin-top: 6px; }
+
+.drink-list { display: grid; gap: 8px; }
+
+.drink-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.drink-name { font-weight: 500; }
+.drink-time { font-size: 11px; color: var(--muted); }
+
+.btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-secondary {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--amber);
+  margin-top: 8px;
+}
+
+.btn-secondary:hover {
+  background: rgba(245, 158, 11, 0.3);
+}
+
+input, select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--fg);
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--mint);
+}
+
+.time-window {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.time-badge {
+  padding: 8px;
+  border-radius: 4px;
+  background: rgba(110, 231, 183, 0.1);
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mint);
+}
+</style>
+</head>
+<body>
+<h1 class="title">Koffein-Tracker</h1>
+
+<div class="stat-card">
+  <div class="stat-label">Heute konsumiert</div>
+  <div class="stat-value" id="totalCaffeine">0 mg</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Letzte Getränke</div>
+  <div class="drink-list" id="drinkList">
+    <div style="color: var(--muted); text-align: center; padding: 20px;">Noch kein Koffein heute</div>
+  </div>
+
+  <button class="btn" onclick="toggleAddForm()">+ Getränk hinzufügen</button>
+</div>
+
+<div id="addForm" style="display: none; margin-top: 12px; padding: 12px; background: rgba(110, 231, 183, 0.05); border-radius: 6px;">
+  <select id="drinkType">
+    <option>Kaffee</option>
+    <option>Tee</option>
+    <option>Energy</option>
+    <option>Limonade</option>
+    <option>Sonstiges</option>
+  </select>
+  <input type="number" id="drinkAmount" placeholder="Menge (mg Koffein)" min="0" step="10">
+  <select id="drinkWindow">
+    <option>Morgens</option>
+    <option>Mittag</option>
+    <option>Nachmittag</option>
+    <option>Abend</option>
+  </select>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+    <button style="background: var(--mint); color: var(--bg); border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="saveDrink()">Speichern</button>
+    <button style="background: rgba(255, 255, 255, 0.1); color: var(--fg); border: none; padding: 8px; border-radius: 6px; cursor: pointer;" onclick="toggleAddForm()">Abbrechen</button>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Empfohlene Fenster</div>
+  <div class="time-window">
+    <div class="time-badge">Morgens<br>5 AM–10 AM</div>
+    <div class="time-badge">Mittag<br>10 AM–2 PM</div>
+    <div class="time-badge">Nachmittag<br>2 PM–5 PM</div>
+    <div class="time-badge">Abend<br>Nach 5 PM ⚠️</div>
+  </div>
+</div>
+
+<button class="btn btn-secondary" onclick="resetToday()">Heute zurücksetzen</button>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('fuel:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('fuel:data') || '{"drinks": [], "lastReset": ""}');
+  }
+};
+
+let state = { drinks: [], lastReset: new Date().toDateString() };
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { drinks: [], lastReset: new Date().toDateString() };
+
+  // Reset if new day
+  if (state.lastReset !== new Date().toDateString()) {
+    state.drinks = [];
+    state.lastReset = new Date().toDateString();
+    await Vitality.save(state);
+  }
+
+  render();
+}
+
+function render() {
+  const total = (state.drinks || []).reduce((sum, d) => sum + (d.amount || 0), 0);
+  document.getElementById('totalCaffeine').textContent = total + ' mg';
+
+  const list = document.getElementById('drinkList');
+  list.innerHTML = (state.drinks || []).length ?
+    state.drinks.map((d, i) => `<div class="drink-item"><div><div class="drink-name">${d.type}</div><div class="drink-time">${d.time}</div></div><div style="font-weight: 600; color: var(--amber);">${d.amount} mg</div></div>`).join('') :
+    '<div style="color: var(--muted); text-align: center; padding: 20px;">Noch kein Koffein heute</div>';
+}
+
+function toggleAddForm() {
+  document.getElementById('addForm').style.display = document.getElementById('addForm').style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveDrink() {
+  const type = document.getElementById('drinkType').value;
+  const amount = parseInt(document.getElementById('drinkAmount').value) || 0;
+  const time = document.getElementById('drinkWindow').value;
+
+  if (amount <= 0) {
+    alert('Gib eine Menge ein.');
+    return;
+  }
+
+  if (!state.drinks) state.drinks = [];
+  state.drinks.push({ type, amount, time, timestamp: new Date().toISOString() });
+
+  await Vitality.save(state);
+  document.getElementById('drinkType').value = 'Kaffee';
+  document.getElementById('drinkAmount').value = '';
+  toggleAddForm();
+  render();
+}
+
+async function resetToday() {
+  if (!confirm('Alle heutigen Einträge löschen?')) return;
+  state.drinks = [];
+  state.lastReset = new Date().toDateString();
+  await Vitality.save(state);
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

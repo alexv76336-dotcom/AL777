@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitness · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --bg: #000000;
+  --bg-el: #0a0a0a;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.workout-list { display: grid; gap: 8px; }
+.workout-item {
+  padding: 12px 14px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.workout-item:hover { background: rgba(255, 255, 255, 0.04); border-color: var(--mint); }
+
+.workout-header { display: flex; justify-content: space-between; align-items: center; font-weight: 500; }
+.workout-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-card {
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(110, 231, 183, 0.08);
+  border: 1px solid rgba(110, 231, 183, 0.2);
+}
+
+.stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.stat-value { font-size: 16px; font-weight: 700; color: var(--mint); font-family: monospace; }
+
+.btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn:hover { opacity: 0.9; }
+
+input { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255, 255, 255, 0.05); color: var(--fg); }
+input:focus { outline: none; border-color: var(--mint); }
+</style>
+</head>
+<body>
+<h1 class="title">Progressive-Overload-Coach</h1>
+
+<div class="section">
+  <div class="section-title">Heute</div>
+  <div id="todayWorkout" class="workout-item" style="padding: 20px; text-align: center; color: var(--muted);">
+    Kein Workout geplant
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Übungen</div>
+  <div class="workout-list" id="exerciseList">
+    <div style="color: var(--muted); text-align: center; padding: 20px;">Lade...</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Workouts diese Woche</div>
+      <div class="stat-value" id="weekStat">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Beste Leistung</div>
+      <div class="stat-value" id="bestStat">—</div>
+    </div>
+  </div>
+</div>
+
+<button class="btn" onclick="addExercise()">+ Neue Übung</button>
+
+<div id="addForm" style="display: none; margin-top: 12px;">
+  <input type="text" id="exName" placeholder="Übungsname">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+    <input type="number" id="exWeight" placeholder="Gewicht (kg)" step="0.5">
+    <input type="number" id="exReps" placeholder="Wdh." min="1">
+  </div>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+    <button style="background: var(--mint); color: var(--bg); border: none; padding: 8px; border-radius: 6px; cursor: pointer; font-weight: 600;" onclick="saveExercise()">Speichern</button>
+    <button style="background: rgba(255, 255, 255, 0.1); color: var(--fg); border: none; padding: 8px; border-radius: 6px; cursor: pointer;" onclick="toggleForm()">Abbrechen</button>
+  </div>
+</div>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('train:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('train:data') || '{"exercises": [], "logs": []}');
+  }
+};
+
+let state = { exercises: [], logs: [] };
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { exercises: [], logs: [] };
+  render();
+}
+
+function render() {
+  document.getElementById('weekStat').textContent = state.logs?.length || '0';
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = (state.exercises || []).length ? 
+    state.exercises.map(e => `<div class="workout-item"><div class="workout-header">${e.name}</div><div class="workout-meta">Beste: ${e.best || '—'} Wdh.</div></div>`).join('') :
+    '<div style="color: var(--muted); text-align: center; padding: 20px;">Noch keine Übungen. Beginne mit deiner ersten!</div>';
+}
+
+function toggleForm() {
+  document.getElementById('addForm').style.display = document.getElementById('addForm').style.display === 'none' ? 'block' : 'none';
+}
+
+function addExercise() {
+  toggleForm();
+  document.getElementById('exName').focus();
+}
+
+async function saveExercise() {
+  const name = document.getElementById('exName').value.trim();
+  const weight = parseFloat(document.getElementById('exWeight').value) || 0;
+  const reps = parseInt(document.getElementById('exReps').value) || 0;
+
+  if (!name || reps <= 0) {
+    alert('Gib einen Namen und Wiederholungen ein.');
+    return;
+  }
+
+  if (!state.exercises) state.exercises = [];
+  state.exercises.push({ name, weight, reps, best: reps, created: new Date().toISOString() });
+
+  if (!state.logs) state.logs = [];
+  state.logs.push({ date: new Date().toISOString(), exercise: name, weight, reps });
+
+  await Vitality.save(state);
+  document.getElementById('exName').value = '';
+  document.getElementById('exWeight').value = '';
+  document.getElementById('exReps').value = '';
+  toggleForm();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>

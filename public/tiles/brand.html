@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avatar · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --pink: #ec4899;
+  --bg: #000000;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.title { font-size: 22px; font-weight: 700; margin-bottom: 20px; }
+
+.section { margin-bottom: 24px; }
+.section-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+.preview-box {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  background: rgba(236, 72, 153, 0.1);
+  border: 2px solid rgba(236, 72, 153, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.preview-emoji { transition: transform 200ms ease; }
+.preview-emoji:hover { transform: scale(1.1); }
+
+.design-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.design-option {
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 120ms ease;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.design-option:hover {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.design-option.active {
+  background: rgba(236, 72, 153, 0.2);
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.color-option {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.color-option:hover {
+  border-color: var(--mint);
+  transform: scale(1.05);
+}
+
+.color-option.active {
+  border-color: var(--mint);
+  box-shadow: 0 0 12px rgba(110, 231, 183, 0.5);
+}
+
+.btn {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.preset-item {
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  text-align: center;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.preset-item:hover {
+  background: rgba(236, 72, 153, 0.1);
+  border-color: var(--pink);
+}
+
+.preset-emoji { font-size: 24px; margin-bottom: 6px; }
+.preset-name { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1 class="title">Avatar-Designer</h1>
+
+<div class="section">
+  <div class="section-title">Dein Avatar</div>
+  <div class="preview-box">
+    <div class="preview-emoji" id="avatarPreview">✨</div>
+  </div>
+
+  <div class="section-title" style="margin-top: 12px;">Design-Stil</div>
+  <div class="design-options" id="designOptions"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Farbe</div>
+  <div class="color-grid" id="colorGrid"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Vorlagen</div>
+  <div class="preset-grid">
+    <div class="preset-item" onclick="selectPreset('🎯')">
+      <div class="preset-emoji">🎯</div>
+      <div class="preset-name">Fokus</div>
+    </div>
+    <div class="preset-item" onclick="selectPreset('⚡')">
+      <div class="preset-emoji">⚡</div>
+      <div class="preset-name">Energie</div>
+    </div>
+    <div class="preset-item" onclick="selectPreset('🚀')">
+      <div class="preset-emoji">🚀</div>
+      <div class="preset-name">Momentum</div>
+    </div>
+    <div class="preset-item" onclick="selectPreset('🔥')">
+      <div class="preset-emoji">🔥</div>
+      <div class="preset-name">Power</div>
+    </div>
+    <div class="preset-item" onclick="selectPreset('💎')">
+      <div class="preset-emoji">💎</div>
+      <div class="preset-name">Wert</div>
+    </div>
+    <div class="preset-item" onclick="selectPreset('✨')">
+      <div class="preset-emoji">✨</div>
+      <div class="preset-name">Magie</div>
+    </div>
+  </div>
+</div>
+
+<button class="btn" onclick="randomize()">🎲 Zufällig generieren</button>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent?.Vitality) return window.parent.Vitality.save(data);
+    localStorage.setItem('brand:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent?.Vitality) return window.parent.Vitality.load();
+    return JSON.parse(localStorage.getItem('brand:data') || '{"design": "orb", "color": "#EC4899", "emoji": "✨"}');
+  }
+};
+
+let state = { design: 'orb', color: '#EC4899', emoji: '✨' };
+
+const designs = [
+  { id: 'orb', name: 'Orb' },
+  { id: 'reactor', name: 'Reactor' },
+  { id: 'blob', name: 'Blob' },
+  { id: 'plasma', name: 'Plasma' }
+];
+
+const colors = [
+  '#EC4899', // Pink
+  '#6EE7B7', // Mint
+  '#F59E0B', // Amber
+  '#8B5CF6', // Purple
+  '#3B82F6', // Blue
+  '#EF4444', // Red
+  '#10B981', // Green
+  '#A78BFA', // Lavender
+];
+
+async function init() {
+  const data = await Vitality.load();
+  state = data || { design: 'orb', color: '#EC4899', emoji: '✨' };
+
+  // Render designs
+  const designContainer = document.getElementById('designOptions');
+  designContainer.innerHTML = designs.map(d => `
+    <div class="design-option ${state.design === d.id ? 'active' : ''}" onclick="selectDesign('${d.id}')">
+      ${d.name}
+    </div>
+  `).join('');
+
+  // Render colors
+  const colorContainer = document.getElementById('colorGrid');
+  colorContainer.innerHTML = colors.map(c => `
+    <div class="color-option ${state.color === c ? 'active' : ''}" style="background: ${c};" onclick="selectColor('${c}')"></div>
+  `).join('');
+
+  render();
+}
+
+async function selectDesign(design) {
+  state.design = design;
+  await Vitality.save(state);
+  init();
+}
+
+async function selectColor(color) {
+  state.color = color;
+  await Vitality.save(state);
+  init();
+}
+
+async function selectPreset(emoji) {
+  state.emoji = emoji;
+  await Vitality.save(state);
+  render();
+}
+
+async function randomize() {
+  state.design = designs[Math.floor(Math.random() * designs.length)].id;
+  state.color = colors[Math.floor(Math.random() * colors.length)];
+  const emojis = ['✨', '🎯', '⚡', '🚀', '🔥', '💎', '🌟', '💫'];
+  state.emoji = emojis[Math.floor(Math.random() * emojis.length)];
+  await Vitality.save(state);
+  init();
+}
+
+function render() {
+  document.getElementById('avatarPreview').textContent = state.emoji;
+  document.getElementById('avatarPreview').style.filter = `hue-rotate(${state.color === '#EC4899' ? '0deg' : state.color === '#6EE7B7' ? '180deg' : '90deg'})`;
+}
+
+init();
+</script>
+</body>
+</html>

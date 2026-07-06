@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ziele · Alex Dashboard</title>
+<style>
+:root {
+  --mint: #6EE7B7;
+  --bg: #000000;
+  --bg-el: #0a0a0a;
+  --fg: #ffffff;
+  --muted: rgba(255, 255, 255, 0.5);
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.page { max-width: 100%; }
+.dash-title {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.ticker-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.goal-ticker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+}
+
+.goal-ticker-led-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 8px rgba(110, 231, 183, 0.5);
+}
+
+.goal-ticker-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.goal-ticker-stage {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  font-family: ui-monospace, monospace;
+}
+
+.goals-section {
+  margin-top: 24px;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.goal-list {
+  display: grid;
+  gap: 8px;
+}
+
+.goal-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.goal-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--mint);
+}
+
+.goal-item.done {
+  opacity: 0.6;
+}
+
+.goal-item-check {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--mint);
+}
+
+.goal-item.done .goal-item-check {
+  background: var(--mint);
+  border-color: var(--mint);
+  color: var(--bg);
+}
+
+.goal-item-text {
+  flex: 1;
+  font-size: 14px;
+}
+
+.day-ring {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.day-phase {
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(110, 231, 183, 0.08);
+  border: 1px solid rgba(110, 231, 183, 0.2);
+  text-align: center;
+  font-size: 12px;
+}
+
+.day-phase-label {
+  font-weight: 600;
+  color: var(--mint);
+  margin-bottom: 4px;
+}
+
+.day-phase-action {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.add-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--mint);
+  color: var(--bg-el);
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms ease;
+}
+
+.add-btn:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
+}
+
+.add-btn:active {
+  transform: scale(0.98);
+}
+
+input.add-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-size: 14px;
+}
+
+input.add-input:focus {
+  outline: none;
+  border-color: var(--mint);
+  background: rgba(110, 231, 183, 0.05);
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.input-row button {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 12px;
+  transition: all 120ms ease;
+}
+
+.input-row .save {
+  background: var(--mint);
+  color: var(--bg-el);
+}
+
+.input-row .save:hover {
+  opacity: 0.9;
+}
+
+.input-row .cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--fg);
+}
+
+.input-row .cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <h1 class="dash-title">Heute</h1>
+
+  <div class="ticker-row" id="tickerRow">
+    <!-- Ticker messages here -->
+  </div>
+
+  <div class="goals-section">
+    <div class="section-title">Heute</div>
+    <div class="goal-list" id="todayGoals">
+      <!-- Today's goals here -->
+    </div>
+    <button class="add-btn" onclick="toggleAddGoal()">+ Ziel hinzufügen</button>
+    <div id="addGoalForm" style="display: none; margin-top: 12px;">
+      <input type="text" class="add-input" id="goalInput" placeholder="Neues Ziel...">
+      <div class="input-row">
+        <button class="save" onclick="saveGoal()">Speichern</button>
+        <button class="cancel" onclick="toggleAddGoal()">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="day-ring">
+    <div class="day-phase">
+      <div class="day-phase-label">Morgen</div>
+      <div class="day-phase-action">Aufwärmen</div>
+    </div>
+    <div class="day-phase">
+      <div class="day-phase-label">Vormittag</div>
+      <div class="day-phase-action">Volle Leistung</div>
+    </div>
+    <div class="day-phase">
+      <div class="day-phase-label">Nachmittag</div>
+      <div class="day-phase-action">Steady</div>
+    </div>
+    <div class="day-phase">
+      <div class="day-phase-label">Abend</div>
+      <div class="day-phase-action">Erholung</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const Vitality = {
+  async save(data) {
+    if (window.parent && window.parent.Vitality) {
+      return window.parent.Vitality.save(data);
+    }
+    // Fallback: localStorage for development
+    localStorage.setItem('vee:data', JSON.stringify(data));
+  },
+  async load() {
+    if (window.parent && window.parent.Vitality) {
+      return window.parent.Vitality.load();
+    }
+    // Fallback: localStorage for development
+    try {
+      return JSON.parse(localStorage.getItem('vee:data') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+};
+
+let goals = [];
+
+async function init() {
+  goals = await Vitality.load();
+  if (!Array.isArray(goals)) goals = [];
+  renderGoals();
+}
+
+function renderGoals() {
+  const container = document.getElementById('todayGoals');
+  container.innerHTML = '';
+
+  const today = new Date().toDateString();
+  const todayGoals = goals.filter(g => g.date === today);
+
+  if (todayGoals.length === 0) {
+    container.innerHTML = '<div style="color: var(--muted); text-align: center; padding: 20px;">Keine Ziele heute. Beginne mit etwas!</div>';
+    return;
+  }
+
+  todayGoals.forEach((goal, idx) => {
+    const div = document.createElement('div');
+    div.className = `goal-item ${goal.done ? 'done' : ''}`;
+    div.innerHTML = `
+      <div class="goal-item-check">${goal.done ? '✓' : ''}</div>
+      <div class="goal-item-text">${goal.text}</div>
+    `;
+    div.onclick = () => toggleGoal(idx);
+    container.appendChild(div);
+  });
+}
+
+function toggleGoal(idx) {
+  goals[idx].done = !goals[idx].done;
+  Vitality.save(goals);
+  renderGoals();
+}
+
+function toggleAddGoal() {
+  const form = document.getElementById('addGoalForm');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form.style.display !== 'none') {
+    document.getElementById('goalInput').focus();
+  }
+}
+
+async function saveGoal() {
+  const input = document.getElementById('goalInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  goals.push({
+    text: text,
+    done: false,
+    date: new Date().toDateString()
+  });
+
+  await Vitality.save(goals);
+  input.value = '';
+  toggleAddGoal();
+  renderGoals();
+}
+
+document.getElementById('goalInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') saveGoal();
+});
+
+init();
+</script>
+</body>
+</html>
