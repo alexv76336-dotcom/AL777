@@ -62,7 +62,7 @@ export const CORE_TILES: Record<CoreTileId, CoreTile> = {
     id: 'train',
     href: '/app/fitness/log',
     index: '01',
-    label: 'Train',
+    label: 'Fitness Tracker',
     variant: 'live',
     orb: { mode: 'wander' },
     defaultSize: 'hero',
