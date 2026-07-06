@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -87,25 +87,25 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; color: 
   <div class="wrap">
     <div class="top">
       <div class="orb" id="orb"></div>
-      <div class="title"><h1>Nova Lite</h1><div class="role">your mentor</div></div>
-      <button id="keyToggle" class="key-toggle" aria-label="API key settings" title="API key">🔑</button>
+      <div class="title"><h1>Nova Lite</h1><div class="role">dein Mentor</div></div>
+      <button id="keyToggle" class="key-toggle" aria-label="API-Schlüssel-Einstellungen" title="API-Schlüssel">🔑</button>
     </div>
 
     <div class="keypanel" id="keypanel">
       <div class="keybar">
-        <input id="keyInput" type="password" placeholder="paste your Anthropic API key (sk-ant-…)" autocomplete="off" />
-        <button id="keySave">Save</button>
+        <input id="keyInput" type="password" placeholder="Anthropic-API-Schlüssel einfügen (sk-ant-…)" autocomplete="off" />
+        <button id="keySave">Speichern</button>
       </div>
       <div class="hint" id="hint">
-        Your key is stored only in <b>this browser</b> and sent straight to Anthropic — never to us.
-        Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
+        Dein Schlüssel wird nur in <b>diesem Browser</b> gespeichert und direkt an Anthropic gesendet — niemals an uns.
+        Hol dir einen bei <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>.
       </div>
     </div>
 
     <div class="feed" id="feed"></div>
 
     <div class="composer">
-      <input id="chatInput" placeholder="ask Nova anything…" autocomplete="off" />
+      <input id="chatInput" placeholder="Frag Nova alles…" autocomplete="off" />
       <button id="send" aria-label="Send">→</button>
     </div>
   </div>
@@ -127,13 +127,13 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; color: 
 
   // ---- key handling ----
   function savedKey(){ try { return localStorage.getItem(KEY_LS) || ''; } catch(e){ return ''; } }
-  if (savedKey()) { hint.classList.add('saved'); hint.innerHTML = '✓ Key saved in this browser. Ask away.'; keyInput.placeholder = '•••• key saved ••••'; keyToggle.classList.add('has-key'); }
+  if (savedKey()) { hint.classList.add('saved'); hint.innerHTML = '✓ Schlüssel in diesem Browser gespeichert. Leg los.'; keyInput.placeholder = '•••• Schlüssel gespeichert ••••'; keyToggle.classList.add('has-key'); }
   document.getElementById('keySave').addEventListener('click', () => {
     const k = keyInput.value.trim();
     if (!k) return;
     try { localStorage.setItem(KEY_LS, k); } catch(e){}
-    keyInput.value = ''; keyInput.placeholder = '•••• key saved ••••';
-    hint.classList.add('saved'); hint.innerHTML = '✓ Key saved in this browser. Ask away.';
+    keyInput.value = ''; keyInput.placeholder = '•••• Schlüssel gespeichert ••••';
+    hint.classList.add('saved'); hint.innerHTML = '✓ Schlüssel in diesem Browser gespeichert. Leg los.';
     keyToggle.classList.add('has-key');
     keypanel.classList.remove('open'); // tuck it away so it's not on screen
   });
@@ -167,19 +167,19 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; color: 
   function scroll(){ window.scrollTo(0, document.body.scrollHeight); }
 
   const SYS =
-    "You are Nova, a personal mentor living inside the user's life-tracking dashboard. " +
-    "You can see their saved data (food, water, gym, finance, sleep, goals, etc.). " +
-    "Give honest, specific, encouraging guidance. " +
-    "Answer in short bullet points starting with '- ', few words each, plain language. " +
-    "Wrap key words and numbers in **double asterisks**. " +
-    "End with one '- Do today:' bullet giving the single action. " +
-    "Dashboard data as JSON:\n";
+    "Du bist Nova, ein persönlicher Mentor im Lebens-Tracking-Dashboard des Nutzers. " +
+    "Du siehst die gespeicherten Daten (Essen, Wasser, Gym, Finanzen, Schlaf, Ziele usw.). " +
+    "Gib ehrliche, konkrete, ermutigende Ratschläge. " +
+    "Antworte auf Deutsch in kurzen Stichpunkten, die mit '- ' beginnen, wenige Wörter je Punkt, einfache Sprache. " +
+    "Setze Schlüsselwörter und Zahlen in **doppelte Sternchen**. " +
+    "Schließe mit einem Punkt '- Heute tun:' ab, der die eine Aktion nennt. " +
+    "Dashboard-Daten als JSON:\n";
 
   let busy = false;
   async function ask(text){
     text = (text||'').trim(); if (!text || busy) return;
     const key = savedKey();
-    if (!key){ addCoach('- Paste your **Anthropic API key** above first, then ask me again.'); return; }
+    if (!key){ addCoach('- Füge oben zuerst deinen **Anthropic-API-Schlüssel** ein, dann frag mich erneut.'); return; }
     busy = true; addUser(text); input.value = '';
     setOrb('think');
     const loading = addCoach('<span class="dots"><i></i><i></i><i></i></span>');
@@ -200,12 +200,12 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; color: 
         }),
       });
       const json = await res.json();
-      if (json.error){ loading.querySelector('div:last-child').innerHTML = render('- ' + (json.error.message || 'Something went wrong — check your API key.')); setOrb(''); busy = false; return; }
-      const reply = (json.content && json.content[0] && json.content[0].text) || 'Hmm, no reply.';
+      if (json.error){ loading.querySelector('div:last-child').innerHTML = render('- ' + (json.error.message || 'Etwas ist schiefgelaufen — prüfe deinen API-Schlüssel.')); setOrb(''); busy = false; return; }
+      const reply = (json.content && json.content[0] && json.content[0].text) || 'Hmm, keine Antwort.';
       loading.querySelector('div:last-child').innerHTML = render(reply);
       setOrb('happy'); setTimeout(() => setOrb(''), 2500);
     } catch(e){
-      loading.querySelector('div:last-child').innerHTML = render('- Could not reach Anthropic — check your connection and key.');
+      loading.querySelector('div:last-child').innerHTML = render('- Anthropic nicht erreichbar — prüfe Verbindung und Schlüssel.');
       setOrb('');
     }
     busy = false;
@@ -214,7 +214,7 @@ body { font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; color: 
   document.getElementById('send').addEventListener('click', () => ask(input.value));
   input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(input.value); });
 
-  addCoach('Hey — I am <b>Nova</b>. Paste your key above, then ask me about food, training, sleep, or where to start. I keep it short and give you <b>one thing to act on</b>.');
+  addCoach('Hey — ich bin <b>Nova</b>. Füge oben deinen Schlüssel ein und frag mich zu Essen, Training, Schlaf oder wo du anfangen sollst. Ich fasse mich kurz und gebe dir <b>eine Sache zum Umsetzen</b>.');
 })();
 </script>
 </body>
