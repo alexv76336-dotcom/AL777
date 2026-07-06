@@ -257,8 +257,8 @@ export const VEE_TILE = {
   id: 'vee' as const,
   href: '/app/starter',
   index: '06',
-  label: 'Vee',
-  kicker: 'Your AI mentor',
+  label: 'Tägliche Ziele',
+  kicker: 'Deine Ziele',
 }
 
 export type HomeTileId = CoreTileId | 'vee' | 'library'
@@ -278,7 +278,6 @@ export const DEFAULT_HOME_ORDER: HomeTileId[] = [
   'library',
   'vitals',
   'vee',
-  'brand',
   'peak',
   'finance',
   'health',
