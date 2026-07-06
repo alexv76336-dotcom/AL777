@@ -1,0 +1,30 @@
+# Next.js
+.next/
+out/
+node_modules/
+*.pem
+
+# Testing
+coverage/
+
+# Production
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# Old files (backup)
+AL777_backup_german/
