@@ -105,7 +105,7 @@ html, body {
       <button id="keySave">Speichern</button>
     </div>
     <div class="hint" id="hint">
-      🔐 Wird auf Vercel gespeichert & auf allen Geräten verfügbar.<br>
+      🔐 Wird synchronisiert über alle Geräte.<br>
       Neuer Key? → <a href="https://console.anthropic.com/api/keys" target="_blank">console.anthropic.com</a>
     </div>
   </div>
@@ -131,33 +131,63 @@ html, body {
 
   keyToggle.addEventListener('click', () => keypanel.classList.toggle('open'));
 
-  // API Route für Key-Speicherung
   const API_URL = '/api/nova/key';
+  const STORAGE_KEY = 'nova_api_key_fallback';
 
-  async function getKey() {
+  // Fallback: lokaler Storage wenn API nicht funktioniert
+  function getFallback() {
     try {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      return data.key || '';
+      return sessionStorage.getItem(STORAGE_KEY) || '';
     } catch(e) {
-      console.error('Failed to load key:', e);
       return '';
     }
   }
 
-  async function saveKey(k) {
+  function saveFallback(k) {
     try {
+      sessionStorage.setItem(STORAGE_KEY, k);
+    } catch(e) {}
+  }
+
+  async function getKey() {
+    try {
+      console.log('[Nova] Loading key from API...');
+      const res = await fetch(API_URL, { timeout: 5000 });
+      if (!res.ok) throw new Error('API response not OK');
+      const data = await res.json();
+      const key = data.key || '';
+      console.log('[Nova] Key from API:', key ? 'loaded' : 'empty');
+      if (key) saveFallback(key);
+      return key;
+    } catch(e) {
+      console.log('[Nova] API failed, using fallback:', e.message);
+      return getFallback();
+    }
+  }
+
+  async function saveKey(k) {
+    saveFallback(k);
+    try {
+      console.log('[Nova] Saving key to API...');
       const res = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: k })
+        body: JSON.stringify({ key: k }),
+        timeout: 5000
       });
       const data = await res.json();
-      return res.ok;
+      if (!res.ok) {
+        console.error('[Nova] API error:', data.error);
+        hint.classList.add('error');
+        hint.innerHTML = '⚠️ Server antwortet nicht, aber Key ist gespeichert';
+        return false;
+      }
+      console.log('[Nova] Key saved to API');
+      return true;
     } catch(e) {
-      console.error('Failed to save key:', e);
+      console.error('[Nova] API save failed:', e.message);
       hint.classList.add('error');
-      hint.innerHTML = '❌ Speichern fehlgeschlagen';
+      hint.innerHTML = '⚠️ Server antwortet nicht, aber Key ist lokal gespeichert';
       return false;
     }
   }
@@ -170,13 +200,13 @@ html, body {
     if (savedKey) {
       hint.classList.remove('error');
       hint.classList.add('saved');
-      hint.innerHTML = '✓ API-Schlüssel auf Vercel gespeichert.';
+      hint.innerHTML = '✓ API-Schlüssel geladen.';
       keyInput.placeholder = '••••••••••••••••';
       keyToggle.classList.add('has-key');
       sendBtn.disabled = false;
       addCoach('Willkommen! Frag mich etwas 💪');
     } else {
-      addCoach('- Hallo, ich bin Nova 🧠<br>- Klick 🔑 und füg deinen API-Key ein<br>- Er wird auf Vercel gespeichert!');
+      addCoach('- Hallo, ich bin Nova 🧠<br>- Klick 🔑 und füg deinen API-Key ein<br>- Dann geht\'s los!');
     }
   }
 
@@ -195,12 +225,13 @@ html, body {
       return;
     }
 
-    if (await saveKey(k)) {
+    const success = await saveKey(k);
+    if (success) {
       keyInput.value = '';
       keyInput.placeholder = '••••••••••••••••';
       hint.classList.remove('error');
       hint.classList.add('saved');
-      hint.innerHTML = '✓ Auf Vercel gespeichert! Alle Geräte haben Zugriff.';
+      hint.innerHTML = '✓ Gespeichert! Zugriff auf allen Geräten.';
       keyToggle.classList.add('has-key');
       keypanel.classList.remove('open');
       sendBtn.disabled = false;
