@@ -1265,11 +1265,149 @@ img, video, canvas, svg { max-width: 100%; }
 
 .hidden { display: none !important; }
 </style>
+<script>
+// Trainingsplan Daten
+const TRAINING_PLAN = {
+  oberkörper: [
+    { id: 'ok-1', name: 'Schultterdrücken', muscle: 'Schulter', reps: '8-15', sets: 3 },
+    { id: 'ok-2', name: 'Klimmzüge', muscle: 'Rücken', reps: '5-8', sets: 5 },
+    { id: 'ok-3', name: 'Dips', muscle: 'Brust', reps: '5-8', sets: 5 },
+    { id: 'ok-4', name: 'Breites Rudern', muscle: 'Rücken', reps: '8-10', sets: 2 },
+    { id: 'ok-5', name: 'Butterfly', muscle: 'Brust', reps: '6-10', sets: 2 },
+    { id: 'ok-6', name: 'Seitheben', muscle: 'Schulter', reps: '8-10', sets: 2 },
+    { id: 'ok-7', name: 'Dragon Flys', muscle: 'Core', sets: 4 }
+  ],
+  beine: [
+    { id: 'b-1', name: 'Zercher Squads', reps: '8-10', sets: 2, notes: 'langsam runter, Füße etwas vor der Stange' },
+    { id: 'b-2', name: 'Beinbeuger', reps: '10-12', sets: 2, notes: 'Füße etwas weiter unten auf der Plattform' },
+    { id: 'b-3', name: 'Beinstrecker', reps: '10-12', sets: 2, notes: 'Schritte Mittelgroß' },
+    { id: 'b-4', name: 'Bizepsmaschine', reps: '15-20', sets: 3 },
+    { id: 'b-5', name: 'Einarmiges Trizepsdrücken', reps: '12-15', sets: 3 },
+    { id: 'b-6', name: 'Hammercurls', reps: '8-12', sets: 2 }
+  ],
+  push: [
+    { id: 'p-1', name: 'Schultterdrücken', muscle: 'Schulter', reps: '8-10', sets: 3 },
+    { id: 'p-2', name: 'Lat Maschine', reps: '8-10', sets: 2 },
+    { id: 'p-3', name: 'Einhand rudern am Seil', reps: '8-10', sets: 2 },
+    { id: 'p-4', name: 'Schrägbankdrücken', reps: '10-12', sets: 2 },
+    { id: 'p-5', name: 'Butterfly', reps: '6-10', sets: 2 },
+    { id: 'p-6', name: 'Seitheben am Seil', reps: '10-15', sets: 3 },
+    { id: 'p-7', name: 'Dragon Flys', sets: 4 }
+  ],
+  pull: [
+    { id: 'pl-1', name: 'SLDL Langhantel', muscle: 'Hamstrings, Glute', reps: '6-8', sets: 2, notes: 'laaaaaangsam runter, jeden CM kontrollieren' },
+    { id: 'pl-2', name: 'Beinpresse', reps: '10-12', sets: 2 },
+    { id: 'pl-3', name: 'Walking lunges', reps: '12-15', sets: 2 },
+    { id: 'pl-4', name: 'Arschübung', reps: '6-10', sets: 2 },
+    { id: 'pl-5', name: 'Bizepscuris maschine', reps: '10-15', sets: 3 },
+    { id: 'pl-6', name: 'Hammercurls hinten gestützt', reps: '8-12', sets: 2 },
+    { id: 'pl-7', name: 'Einarmiges Trizepsdrücken', reps: '6-10', sets: 3 },
+    { id: 'pl-8', name: 'Trizepsdrücken Seil mit langer Stange', reps: '8-12', sets: 2 }
+  ]
+};
+
+let currentPlan = 'oberkörper';
+let checkedExercises = {};
+
+function loadPlanState() {
+  try {
+    const saved = sessionStorage.getItem('workout:plan:checked');
+    if (saved) checkedExercises = JSON.parse(saved);
+  } catch (e) {}
+}
+
+function savePlanState() {
+  try {
+    sessionStorage.setItem('workout:plan:checked', JSON.stringify(checkedExercises));
+  } catch (e) {}
+}
+
+function renderWorkoutPlan() {
+  const exercises = TRAINING_PLAN[currentPlan];
+  const list = document.getElementById('workoutList');
+
+  const completed = Object.values(checkedExercises).filter(v => v).length;
+  const total = exercises.length;
+  const progress = total > 0 ? (completed / total) * 100 : 0;
+
+  document.getElementById('progressFill').style.width = progress + '%';
+  document.getElementById('progressText').textContent = `${completed}/${total} Übungen`;
+
+  list.innerHTML = exercises.map(ex => `
+    <div style="background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 12px; display: flex; gap: 10px; align-items: flex-start; cursor: pointer; transition: all 0.2s;" onclick="toggleExercisePlan('${ex.id}')" class="exercise-row ${checkedExercises[ex.id] ? 'done' : ''}">
+      <input type="checkbox" ${checkedExercises[ex.id] ? 'checked' : ''} style="width: 18px; height: 18px; margin-top: 2px; cursor: pointer; accent-color: #6EE7B7; flex-shrink: 0;" onclick="event.stopPropagation(); toggleExercisePlan('${ex.id}')">
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-weight: 600; color: var(--text-1); margin-bottom: 4px; ${checkedExercises[ex.id] ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${ex.name}</div>
+        <div style="font-size: 12px; color: var(--text-3);">
+          ${ex.muscle ? `💪 ${ex.muscle} · ` : ''}${ex.reps ? `${ex.reps} × ${ex.sets} Sätze` : `${ex.sets} Sätze`}
+          ${ex.notes ? `<br>📝 ${ex.notes}` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleExercisePlan(id) {
+  checkedExercises[id] = !checkedExercises[id];
+  savePlanState();
+  renderWorkoutPlan();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadPlanState();
+
+  document.getElementById('showPlanBtn').addEventListener('click', () => {
+    document.getElementById('workoutPlanSection').style.display = 'block';
+    document.getElementById('showPlanBtn').style.display = 'none';
+  });
+
+  document.getElementById('closePlanBtn').addEventListener('click', () => {
+    document.getElementById('workoutPlanSection').style.display = 'none';
+    document.getElementById('showPlanBtn').style.display = 'block';
+  });
+
+  document.querySelectorAll('.plan-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentPlan = btn.dataset.plan;
+      document.querySelectorAll('.plan-tab').forEach(b => {
+        b.style.background = 'rgba(255,255,255,0.04)';
+        b.style.color = 'var(--text-2)';
+      });
+      btn.style.background = 'rgba(110,231,183,0.14)';
+      btn.style.color = 'var(--good)';
+      renderWorkoutPlan();
+    });
+  });
+
+  renderWorkoutPlan();
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <div class="po-shell">
+  <!-- TRAININGSPLAN SECTION -->
+  <div class="card" id="workoutPlanSection" style="display: none; margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+      <div style="font-size: 14px; font-weight: 700; color: var(--text-1);">📋 Trainingsplan</div>
+      <button class="po-btn-secondary" id="closePlanBtn" style="font-size: 12px; padding: 6px 12px;">Schließen</button>
+    </div>
+    <div style="display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto;">
+      <button class="po-seg-btn active plan-tab" data-plan="oberkörper" style="flex-shrink: 0; padding: 8px 14px; border: 1px solid var(--border); background: rgba(110,231,183,0.14); color: var(--good); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">Oberkörper</button>
+      <button class="po-seg-btn plan-tab" data-plan="beine" style="flex-shrink: 0; padding: 8px 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text-2); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">Beine</button>
+      <button class="po-seg-btn plan-tab" data-plan="push" style="flex-shrink: 0; padding: 8px 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text-2); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">Push</button>
+      <button class="po-seg-btn plan-tab" data-plan="pull" style="flex-shrink: 0; padding: 8px 14px; border: 1px solid var(--border); background: rgba(255,255,255,0.04); color: var(--text-2); border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">Pull</button>
+    </div>
+    <div id="workoutList" style="display: grid; gap: 8px; margin-bottom: 12px;"></div>
+    <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden;">
+      <div id="progressFill" style="height: 100%; background: linear-gradient(90deg, #6EE7B7, #67E8F9); width: 0%; transition: width 0.3s;"></div>
+    </div>
+    <div id="progressText" style="font-size: 11px; color: var(--text-3); text-align: center; margin-top: 8px; font-weight: 600;">0/0 Übungen</div>
+  </div>
+
+  <button class="po-btn-secondary" id="showPlanBtn" style="width: 100%; margin-bottom: 18px; padding: 12px; font-weight: 600;">📋 Trainingsplan anzeigen</button>
+
   <button class="po-day-pill" type="button" id="dayPill" title="Tippen, um den Tagesfilter auf das heutige Split umzustellen">
     <span class="po-day-date" id="dayPillDate">—</span>
     <span class="po-day-sep">·</span>

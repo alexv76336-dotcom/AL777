@@ -28,7 +28,6 @@ export type CoreTileId =
   | 'brand'
   | 'finance'
   | 'health'
-  | 'workout'
 
 /** A single live metric to surface on a tile (Train day, Fuel kcal). */
 export interface CoreStat {
@@ -212,26 +211,6 @@ export const CORE_TILES: Record<CoreTileId, CoreTile> = {
       </svg>
     ),
   },
-  workout: {
-    id: 'workout',
-    href: '/app/starter',
-    index: '09',
-    label: 'Trainingsplan',
-    orb: { mode: 'wander' },
-    defaultSize: 'm',
-    glyph: (
-      <svg viewBox="-12 -12 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" strokeLinecap="round">
-        <circle cx="-5" cy="-6" r="3" /><path d="M-5 -3 L-5 6 M-8 0 L-2 0" />
-        <path d="M5 -4 L5 8" /><circle cx="5" cy="-7" r="2.5" />
-      </svg>
-    ),
-    art: (
-      <svg className="art" viewBox="0 0 210 250">
-        <path className="mot" d="M46 110 Q82 94 106 110 T168 110" />
-        <g className="orb"><circle className="glow" r="10" /><circle className="node" r="3.4" /></g>
-      </svg>
-    ),
-  },
 }
 
 /**
@@ -282,7 +261,7 @@ export const VEE_TILE = {
   kicker: 'Deine Ziele',
 }
 
-export type HomeTileId = CoreTileId | 'vee' | 'library' | 'workout'
+export type HomeTileId = CoreTileId | 'vee' | 'library'
 
 /**
  * The default home order on a fresh dashboard. Combined with the seeded sizes
@@ -302,7 +281,6 @@ export const DEFAULT_HOME_ORDER: HomeTileId[] = [
   'peak',
   'finance',
   'health',
-  'workout',
 ]
 
 /** Is this id one of the pre-installed core tiles (incl. Vee)? */
