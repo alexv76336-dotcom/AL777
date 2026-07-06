@@ -105,8 +105,8 @@ html, body {
       <button id="keySave">Speichern</button>
     </div>
     <div class="hint" id="hint">
-      🔐 Dein Schlüssel bleibt privat in <b>diesem Browser</b>.<br>
-      Neuer Schlüssel? → <a href="https://console.anthropic.com/api/keys" target="_blank">console.anthropic.com/api/keys</a>
+      🔐 Nur in <b>diesem Browser</b> gespeichert.<br>
+      Neuer Key? → <a href="https://console.anthropic.com/api/keys" target="_blank">console.anthropic.com</a>
     </div>
   </div>
 
@@ -131,61 +131,76 @@ html, body {
 
   keyToggle.addEventListener('click', () => keypanel.classList.toggle('open'));
 
-  const Vitality = {
-    async save(data) {
-      if (window.parent?.Vitality) return window.parent.Vitality.save(data);
-      try { localStorage.setItem('peak:data', JSON.stringify(data)); } catch(e){}
-    },
-    async load() {
-      if (window.parent?.Vitality) return window.parent.Vitality.load();
-      try { return JSON.parse(localStorage.getItem('peak:data') || '{}'); } catch(e) { return {}; }
+  // Direktes localStorage (robuster als Vitality Bridge)
+  const KEY_NAME = 'nova_api_key';
+
+  function getKey() {
+    try {
+      const key = localStorage.getItem(KEY_NAME);
+      console.log('Retrieved key from localStorage:', key ? 'exists' : 'not found');
+      return key || '';
+    } catch(e) {
+      console.error('localStorage read failed:', e);
+      return '';
     }
-  };
+  }
+
+  function saveKey(k) {
+    try {
+      localStorage.setItem(KEY_NAME, k);
+      console.log('Key saved to localStorage successfully');
+      return true;
+    } catch(e) {
+      console.error('localStorage write failed:', e);
+      hint.classList.add('error');
+      hint.innerHTML = '❌ Speichern fehlgeschlagen (Browser-Speicher voll?)';
+      return false;
+    }
+  }
 
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function setOrb(s){ orb.className = 'orb' + (s ? ' ' + s : ''); }
 
-  let state = { apiKey: '', messages: [] };
-
-  async function loadState() {
-    const data = await Vitality.load();
-    state = data || { apiKey: '', messages: [] };
-    if (state.apiKey) {
+  function init() {
+    const savedKey = getKey();
+    if (savedKey) {
       hint.classList.remove('error');
       hint.classList.add('saved');
-      hint.innerHTML = '✓ API-Schlüssel geladen. Du bist ready.';
+      hint.innerHTML = '✓ API-Schlüssel geladen.';
       keyInput.placeholder = '••••••••••••••••';
       keyToggle.classList.add('has-key');
       sendBtn.disabled = false;
-      addCoach('Bereit! Was möchtest du wissen?');
+      addCoach('Hallo! Frag mich alles 💪');
     }
   }
 
-  document.getElementById('keySave').addEventListener('click', async () => {
+  document.getElementById('keySave').addEventListener('click', () => {
     const k = keyInput.value.trim();
+
     if (!k) {
       hint.classList.add('error');
-      hint.innerHTML = '❌ API-Schlüssel erforderlich (beginnt mit sk-ant-)';
+      hint.innerHTML = '❌ Schlüssel erforderlich';
       return;
     }
+
     if (!k.startsWith('sk-ant-')) {
       hint.classList.add('error');
-      hint.innerHTML = '❌ Ungültiger Schlüssel (muss mit sk-ant- beginnen)';
+      hint.innerHTML = '❌ Muss mit sk-ant- beginnen';
       return;
     }
-    state.apiKey = k;
-    state.messages = [];
-    await Vitality.save(state);
-    keyInput.value = '';
-    keyInput.placeholder = '••••••••••••••••';
-    hint.classList.remove('error');
-    hint.classList.add('saved');
-    hint.innerHTML = '✓ Schlüssel gespeichert!';
-    keyToggle.classList.add('has-key');
-    keypanel.classList.remove('open');
-    sendBtn.disabled = false;
-    feed.innerHTML = '';
-    addCoach('Los geht\'s! 💪 Frag mich alles');
+
+    if (saveKey(k)) {
+      keyInput.value = '';
+      keyInput.placeholder = '••••••••••••••••';
+      hint.classList.remove('error');
+      hint.classList.add('saved');
+      hint.innerHTML = '✓ Schlüssel gespeichert!';
+      keyToggle.classList.add('has-key');
+      keypanel.classList.remove('open');
+      sendBtn.disabled = false;
+      feed.innerHTML = '';
+      addCoach('Bereit! Was möchtest du wissen? 🎯');
+    }
   });
 
   function render(text){
@@ -217,15 +232,16 @@ html, body {
     return e;
   }
 
-  const SYS = "Du bist Nova, ein KI-Mentor für einen Fitness- und Wellness-Dashboard-Benutzer. Antworte kurz, prägnant und auf Deutsch. Nutze Stichpunkte mit '-' Präfix. Sei ermutigend und konkret.";
+  const SYS = "Du bist Nova, KI-Mentor. Antworte kurz auf Deutsch. Nutze Stichpunkte mit '-'. Sei konkret und ermutigend.";
 
   let busy = false;
   async function ask(text){
     text = (text||'').trim();
     if (!text || busy) return;
 
-    if (!state.apiKey){
-      addCoach('- API-Schlüssel erforderlich<br>- Klick 🔑 oben rechts');
+    const apiKey = getKey();
+    if (!apiKey){
+      addCoach('- Schlüssel erforderlich<br>- Klick 🔑 oben rechts');
       return;
     }
 
@@ -237,12 +253,11 @@ html, body {
     const loading = addCoach('<span class="dots"><i></i><i></i><i></i></span>');
 
     try {
-      console.log('Sending request to Anthropic API...');
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
-          'x-api-key': state.apiKey,
+          'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true',
         },
@@ -254,37 +269,23 @@ html, body {
         }),
       });
 
-      console.log('Response status:', res.status);
       const json = await res.json();
-      console.log('Response JSON:', json);
 
       if (!res.ok || json.error){
-        const errorMsg = json.error?.message || 'Unbekannter Fehler';
-        console.error('API Error:', errorMsg);
-        loading.querySelector('div:last-child').innerHTML = render('- Fehler: ' + errorMsg);
-        if (errorMsg.includes('invalid_api_key') || errorMsg.includes('401')) {
-          hint.classList.add('error');
-          hint.classList.remove('saved');
-          hint.innerHTML = '❌ API-Schlüssel ungültig oder abgelaufen';
-          state.apiKey = '';
-          await Vitality.save(state);
-        }
+        const msg = json.error?.message || 'Fehler';
+        loading.querySelector('div:last-child').innerHTML = render('- ' + msg);
         setOrb('');
         busy = false;
         sendBtn.disabled = false;
         return;
       }
 
-      const reply = (json.content && json.content[0] && json.content[0].text) || '- Keine Antwort erhalten';
+      const reply = (json.content && json.content[0] && json.content[0].text) || '- Keine Antwort';
       loading.querySelector('div:last-child').innerHTML = render(reply);
       setOrb('happy');
       setTimeout(() => setOrb(''), 2500);
-      state.messages.push({role: 'user', content: text});
-      state.messages.push({role: 'assistant', content: reply});
-      await Vitality.save(state);
     } catch(e){
-      console.error('Network error:', e);
-      loading.querySelector('div:last-child').innerHTML = render('- Verbindungsfehler: ' + e.message);
+      loading.querySelector('div:last-child').innerHTML = render('- Fehler: ' + e.message);
       setOrb('');
     }
     busy = false;
@@ -294,7 +295,7 @@ html, body {
   sendBtn.addEventListener('click', () => ask(input.value));
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && !busy) ask(input.value); });
 
-  loadState();
+  init();
 })();
 </script>
 </body>
